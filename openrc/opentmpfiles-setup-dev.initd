@@ -6,14 +6,16 @@ description="Set up tmpfiles.d entries"
 
 depend()
 {
-	need localmount
+	provide tmpfiles-setup-dev
+	use dev-mount
+	before dev
+	keyword -prefix -vserver
 }
 
 start()
 {
-	ebegin "Setting up tmpfiles.d entries"
-	/lib64/rc/sh/tmpfiles.sh --exclude-prefix=/dev --create --remove --boot \
-		${tmpfiles_opts}
+	ebegin "Setting up tmpfiles.d entries for /dev"
+	tmpfiles --prefix=/dev --create --boot ${tmpfiles_opts}
 	eend $?
 	return 0
 }
