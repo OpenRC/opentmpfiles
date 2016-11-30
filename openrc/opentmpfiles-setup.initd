@@ -6,7 +6,7 @@ description="Set up tmpfiles.d entries"
 
 depend()
 {
-	provide tmpfiles-setup
+	provide tmpfiles-setup tmpfiles.setup
 	need localmount
 }
 
