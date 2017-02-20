@@ -98,7 +98,7 @@ createfile() {
 	dryrun_or_real touch "$path"
 	[ "$uid" != - ] && dryrun_or_real chown $uid "$path"
 	[ "$gid" != - ] && dryrun_or_real chgrp $gid "$path"
-	dryrun_or_real chmod $mode "$path"
+	[ "$mode" != - ] && dryrun_or_real chmod $mode "$path"
 }
 
 createpipe() {
@@ -106,7 +106,7 @@ createpipe() {
 	dryrun_or_real mkfifo "$path"
 	[ "$uid" != - ] && dryrun_or_real chown $uid "$path"
 	[ "$gid" != - ] && dryrun_or_real chgrp $gid "$path"
-	dryrun_or_real chmod $mode "$path"
+	[ "$mode" != - ] && dryrun_or_real chmod $mode "$path"
 }
 
 _b() {
@@ -115,7 +115,9 @@ _b() {
 	if [ ! -e "$path" ]; then
 		dryrun_or_real mknod -m $mode $path b ${arg%:*} ${arg#*:}
 		_restorecon "$path"
-		dryrun_or_real chown $uid:$gid $path
+		[ "$uid" != - ] && dryrun_or_real chown $uid "$path"
+		[ "$gid" != - ] && dryrun_or_real chgrp $gid "$path"
+		[ "$mode" != - ] && dryrun_or_real chmod $mode "$path"
 	fi
 }
 
@@ -125,7 +127,9 @@ _c() {
 	if [ ! -e "$path" ]; then
 		dryrun_or_real mknod -m $mode $path c ${arg%:*} ${arg#*:}
 		_restorecon "$path"
-		dryrun_or_real chown $uid:$gid $path
+		[ "$uid" != - ] && dryrun_or_real chown $uid "$path"
+		[ "$gid" != - ] && dryrun_or_real chgrp $gid "$path"
+		[ "$mode" != - ] && dryrun_or_real chmod $mode "$path"
 	fi
 }
 
