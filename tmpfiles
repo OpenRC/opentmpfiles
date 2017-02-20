@@ -87,9 +87,10 @@ _restorecon() {
 
 createdirectory() {
 	local mode="$1" uid="$2" gid="$3" path="$4"
+	dryrun_or_real mkdir "$path"
 	[ "$uid" != - ] && dryrun_or_real chown $uid "$path"
 	[ "$gid" != - ] && dryrun_or_real chgrp $gid "$path"
-	dryrun_or_real chmod $mode "$path"
+	[ "$mode" != - ] && dryrun_or_real chmod $mode "$path"
 }
 
 createfile() {
