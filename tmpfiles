@@ -88,48 +88,61 @@ _restorecon() {
 createdirectory() {
 	local mode="$1" uid="$2" gid="$3" path="$4"
 	dryrun_or_real mkdir "$path"
-	[ "$uid" != - ] && dryrun_or_real chown $uid "$path"
-	[ "$gid" != - ] && dryrun_or_real chgrp $gid "$path"
-	[ "$mode" != - ] && dryrun_or_real chmod $mode "$path"
+	[ "$uid" = - ] && uid=root
+	[ "$gid" = - ] && gid=root
+	[ "$mode" = - ] && mode=0755
+	dryrun_or_real chown $uid "$path"
+	dryrun_or_real chgrp $gid "$path"
+	dryrun_or_real chmod $mode "$path"
 }
 
 createfile() {
 	local mode="$1" uid="$2" gid="$3" path="$4"
 	dryrun_or_real touch "$path"
-	[ "$uid" != - ] && dryrun_or_real chown $uid "$path"
-	[ "$gid" != - ] && dryrun_or_real chgrp $gid "$path"
-	[ "$mode" != - ] && dryrun_or_real chmod $mode "$path"
+	[ "$uid" = - ] && uid=root
+	[ "$gid" = - ] && gid=root
+	[ "$mode" = - ] && mode=0644
+	dryrun_or_real chown $uid "$path"
+	dryrun_or_real chgrp $gid "$path"
+	dryrun_or_real chmod $mode "$path"
 }
 
 createpipe() {
 	local mode="$1" uid="$2" gid="$3" path="$4"
 	dryrun_or_real mkfifo "$path"
-	[ "$uid" != - ] && dryrun_or_real chown $uid "$path"
-	[ "$gid" != - ] && dryrun_or_real chgrp $gid "$path"
-	[ "$mode" != - ] && dryrun_or_real chmod $mode "$path"
+	[ "$uid" = - ] && uid=root
+	[ "$gid" = - ] && gid=root
+	[ "$mode" = - ] && mode=0644
+	dryrun_or_real chown $uid "$path"
+	dryrun_or_real chgrp $gid "$path"
+	dryrun_or_real chmod $mode "$path"
 }
 
 _b() {
 	# Create a block device node if it doesn't exist yet
 	local path=$1 mode=$2 uid=$3 gid=$4 age=$5 arg=$6
+	[ "$uid" = - ] && uid=root
+	[ "$gid" = - ] && gid=root
+	[ "$mode" = - ] && mode=0644
 	if [ ! -e "$path" ]; then
 		dryrun_or_real mknod -m $mode $path b ${arg%:*} ${arg#*:}
 		_restorecon "$path"
-		[ "$uid" != - ] && dryrun_or_real chown $uid "$path"
-		[ "$gid" != - ] && dryrun_or_real chgrp $gid "$path"
-		[ "$mode" != - ] && dryrun_or_real chmod $mode "$path"
+		dryrun_or_real chown $uid "$path"
+		dryrun_or_real chgrp $gid "$path"
 	fi
 }
 
 _c() {
 	# Create a character device node if it doesn't exist yet
 	local path=$1 mode=$2 uid=$3 gid=$4 age=$5 arg=$6
+	[ "$uid" = - ] && uid=root
+	[ "$gid" = - ] && gid=root
+	[ "$mode" = - ] && mode=0644
 	if [ ! -e "$path" ]; then
 		dryrun_or_real mknod -m $mode $path c ${arg%:*} ${arg#*:}
 		_restorecon "$path"
-		[ "$uid" != - ] && dryrun_or_real chown $uid "$path"
-		[ "$gid" != - ] && dryrun_or_real chgrp $gid "$path"
-		[ "$mode" != - ] && dryrun_or_real chmod $mode "$path"
+		dryrun_or_real chown $uid "$path"
+		dryrun_or_real chgrp $gid "$path"
 	fi
 }
 
