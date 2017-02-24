@@ -87,7 +87,7 @@ _restorecon() {
 
 createdirectory() {
 	local mode="$1" uid="$2" gid="$3" path="$4"
-	dryrun_or_real mkdir "$path"
+	dryrun_or_real mkdir -p "$path"
 	[ "$uid" = - ] && uid=root
 	[ "$gid" = - ] && gid=root
 	[ "$mode" = - ] && mode=0755
@@ -188,9 +188,8 @@ _d() {
 	[ $CREATE -gt 0 ] || return 0
 
 	if [ ! -d "$path" ]; then
-		dryrun_or_real mkdir -p "$path" 2>/dev/null
-		_restorecon "$path"
 		createdirectory "$mode" "$uid" "$gid" "$path"
+		_restorecon "$path"
 	fi
 }
 
@@ -204,9 +203,8 @@ _D() {
 	fi
 
 	if [ $CREATE -gt 0 ]; then
-		dryrun_or_real mkdir -p "$path" 2>/dev/null
-		_restorecon "$path"
 		createdirectory "$mode" "$uid" "$gid" "$path"
+		_restorecon "$path"
 	fi
 }
 
