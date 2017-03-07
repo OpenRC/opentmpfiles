@@ -8,3 +8,5 @@ all:
 install:
 	$(install) -d $(DESTDIR)$(bindir)
 	$(install) -m $(binmode) $(binprogs) $(DESTDIR)$(bindir)
+
+.PHONY: all install
