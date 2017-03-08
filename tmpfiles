@@ -41,7 +41,9 @@ invalid_option() {
 
 dryrun_or_real() {
 	local dryrun=
-	[ $DRYRUN -eq 1 ] && dryrun=echo
+	if [ $DRYRUN -eq 1 ]; then
+		dryrun=echo
+	fi
 	$dryrun "$@"
 }
 
@@ -62,10 +64,18 @@ relabel() {
 
 	for path in ${paths}; do
 		if [ -e "$path" ]; then
-			[ -x /sbin/restorecon ] && dryrun_or_real restorecon $CHOPTS "$path"
-			[ $uid != '-' ] && dryrun_or_real chown $CHOPTS "$uid" "$path"
-			[ $gid != '-' ] && dryrun_or_real chgrp $CHOPTS "$gid" "$path"
-			[ $mode != '-' ] && dryrun_or_real chmod $CHOPTS "$mode" "$path"
+			if [ -x /sbin/restorecon ]; then
+				dryrun_or_real restorecon $CHOPTS "$path"
+			fi
+			if [ $uid != '-' ]; then
+				dryrun_or_real chown $CHOPTS "$uid" "$path"
+			fi
+			if [ $gid != '-' ]; then
+				dryrun_or_real chgrp $CHOPTS "$gid" "$path"
+			fi
+			if [ $mode != '-' ]; then
+				dryrun_or_real chmod $CHOPTS "$mode" "$path"
+			fi
 		fi
 	done
 }
@@ -88,9 +98,15 @@ _restorecon() {
 createdirectory() {
 	local mode="$1" uid="$2" gid="$3" path="$4"
 	dryrun_or_real mkdir -p "$path"
-	[ "$uid" = - ] && uid=root
-	[ "$gid" = - ] && gid=root
-	[ "$mode" = - ] && mode=0755
+	if [ "$uid" = - ]; then
+		uid=root
+	fi
+	if [ "$gid" = - ]; then
+		gid=root
+	fi
+	if [ "$mode" = - ]; then
+		mode=0755
+	fi
 	dryrun_or_real chown $uid "$path"
 	dryrun_or_real chgrp $gid "$path"
 	dryrun_or_real chmod $mode "$path"
@@ -99,9 +115,15 @@ createdirectory() {
 createfile() {
 	local mode="$1" uid="$2" gid="$3" path="$4"
 	dryrun_or_real touch "$path"
-	[ "$uid" = - ] && uid=root
-	[ "$gid" = - ] && gid=root
-	[ "$mode" = - ] && mode=0644
+	if [ "$uid" = - ]; then
+		uid=root
+	fi
+	if [ "$gid" = - ]; then
+		gid=root
+	fi
+	if [ "$mode" = - ]; then
+		mode=0644
+	fi
 	dryrun_or_real chown $uid "$path"
 	dryrun_or_real chgrp $gid "$path"
 	dryrun_or_real chmod $mode "$path"
@@ -110,9 +132,15 @@ createfile() {
 createpipe() {
 	local mode="$1" uid="$2" gid="$3" path="$4"
 	dryrun_or_real mkfifo "$path"
-	[ "$uid" = - ] && uid=root
-	[ "$gid" = - ] && gid=root
-	[ "$mode" = - ] && mode=0644
+	if [ "$uid" = - ]; then
+		uid=root
+	fi
+	if [ "$gid" = - ]; then
+		gid=root
+	fi
+	if [ "$mode" = - ]; then
+		mode=0644
+	fi
 	dryrun_or_real chown $uid "$path"
 	dryrun_or_real chgrp $gid "$path"
 	dryrun_or_real chmod $mode "$path"
@@ -121,9 +149,15 @@ createpipe() {
 _b() {
 	# Create a block device node if it doesn't exist yet
 	local path=$1 mode=$2 uid=$3 gid=$4 age=$5 arg=$6
-	[ "$uid" = - ] && uid=root
-	[ "$gid" = - ] && gid=root
-	[ "$mode" = - ] && mode=0644
+	if [ "$uid" = - ]; then
+		uid=root
+	fi
+	if [ "$gid" = - ]; then
+		gid=root
+	fi
+	if [ "$mode" = - ]; then
+		mode=0644
+	fi
 	if [ ! -e "$path" ]; then
 		dryrun_or_real mknod -m $mode $path b ${arg%:*} ${arg#*:}
 		_restorecon "$path"
@@ -135,9 +169,15 @@ _b() {
 _c() {
 	# Create a character device node if it doesn't exist yet
 	local path=$1 mode=$2 uid=$3 gid=$4 age=$5 arg=$6
-	[ "$uid" = - ] && uid=root
-	[ "$gid" = - ] && gid=root
-	[ "$mode" = - ] && mode=0644
+	if [ "$uid" = - ]; then
+		uid=root
+	fi
+	if [ "$gid" = - ]; then
+		gid=root
+	fi
+	if [ "$mode" = - ]; then
+		mode=0644
+	fi
 	if [ ! -e "$path" ]; then
 		dryrun_or_real mknod -m $mode $path c ${arg%:*} ${arg#*:}
 		_restorecon "$path"
@@ -152,9 +192,15 @@ _C() {
 	if [ ! -e "$path" ]; then
 		dryrun_or_real cp -r "$arg" "$path"
 		_restorecon "$path"
-		[ $uid != '-' ] && dryrun_or_real chown "$uid" "$path"
-		[ $gid != '-' ] && dryrun_or_real chgrp "$gid" "$path"
-		[ $mode != '-' ] && dryrun_or_real chmod "$mode" "$path"
+		if [ $uid != '-' ]; then
+			dryrun_or_real chown "$uid" "$path"
+		fi
+		if [ $gid != '-' ]; then
+			dryrun_or_real chgrp "$gid" "$path"
+		fi
+		if [ $mode != '-']; then
+			dryrun_or_real chmod "$mode" "$path"
+		fi
 	fi
 }
 
@@ -166,7 +212,9 @@ _f() {
 
 	if [ ! -e "$path" ]; then
 		createfile "$mode" "$uid" "$gid" "$path"
-		[ -z "$arg" ] || _w "$@"
+		if [ -n "$arg" ]; then
+			_w "$@"
+		fi
 	fi
 }
 
@@ -178,7 +226,9 @@ _F() {
 
 	dryrun_or_real rm -f "$path"
 	createfile "$mode" "$uid" "$gid" "$path"
-	[ -z "$arg" ] || _w "$@"
+	if [ -n "$arg" ]; then
+		_w "$@"
+	fi
 }
 
 _d() {
@@ -249,7 +299,9 @@ _H() {
 _L() {
 	# Create a symlink if it doesn't exist yet
 	local path=$1 mode=$2 uid=$3 gid=$4 age=$5 arg=$6
-	[ ! -e "$path" ] && dryrun_or_real ln -s "$arg" "$path"
+	if [ ! -e "$path" ]; then
+		dryrun_or_real ln -s "$arg" "$path"
+	fi
 	_restorecon "$path"
 }
 
@@ -310,7 +362,9 @@ _R() {
 	[ $REMOVE -gt 0 ] || return 0
 
 	for path in ${paths}; do
-		[ -d "$path" ] && dryrun_or_real rm -rf --one-file-system "$path"
+		if [ -d "$path" ]; then
+			dryrun_or_real rm -rf --one-file-system "$path"
+	fi
 	done
 }
 
