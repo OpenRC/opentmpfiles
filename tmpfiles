@@ -116,7 +116,7 @@ _restorecon() {
 
 createdirectory() {
 	local mode="$1" uid="$2" gid="$3" path="$4"
-	dryrun_or_real mkdir -p "$path"
+	[ -d "$path" ] || dryrun_or_real mkdir -p "$path"
 	if [ "$uid" = - ]; then
 		uid=root
 	fi
@@ -254,9 +254,7 @@ _d() {
 	# Create a directory if it doesn't exist yet
 	local path=$1 mode=$2 uid=$3 gid=$4
 
-	[ $CREATE -gt 0 ] || return 0
-
-	if [ ! -d "$path" ]; then
+	if [ $CREATE -gt 0 ]; then
 		createdirectory "$mode" "$uid" "$gid" "$path"
 		_restorecon "$path"
 	fi
