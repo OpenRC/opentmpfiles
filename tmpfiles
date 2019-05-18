@@ -429,6 +429,11 @@ _Z() {
 	CHOPTS=-R relabel "$@"
 }
 
+usage() {
+	printf 'usage: %s [--exclude-prefix=path] [--prefix=path] [--boot] [--create] [--remove] [--clean] [--verbose] [--dry-run]\n' "${0##*/}"
+	exit ${1:-0}
+}
+
 BOOT=0 CREATE=0 REMOVE=0 CLEAN=0 VERBOSE=0 DRYRUN=0 error=0 LINENO=0
 EXCLUDE=
 PREFIX=
@@ -444,6 +449,7 @@ while [ $# -gt 0 ]; do
 		--dryrun|--dry-run) DRYRUN=1 ;;
 		--exclude-prefix=*) EXCLUDE="${EXCLUDE}${1##--exclude-prefix=} " ;;
 		--prefix=*) PREFIX="${PREFIX}${1##--prefix=} " ;;
+		-h|--help) usage ;;
 		-*) invalid_option "$1" ;;
 		*) FILES="${FILES} $1"
 	esac
@@ -456,8 +462,7 @@ if [ $(( CLEAN )) -eq 1 ] ; then
 fi
 
 if [ "$CREATE$REMOVE" = '00' ]; then
-	printf 'usage: %s [--exclude-prefix=path] [--prefix=path] [--boot] [--create] [--remove] [--clean] [--verbose] [--dry-run]\n' "${0##*/}"
-	exit 1
+	usage 1 >&2
 fi
 
 # XXX: The harcoding of /usr/lib/ is an explicit choice by upstream
