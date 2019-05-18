@@ -3,3 +3,6 @@
 
 # Compiled objects/libs.
 *.[oa]
+
+# Our project programs.
+/tmpfiles

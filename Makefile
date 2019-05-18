@@ -24,11 +24,15 @@ include ./build.mk
 .deps.cc:
 	$(DRIVER_CXX) $(CPPFLAGS) -MM $^ >$@
 
+# The main program.
+VPATH += src
+include ./src/module.mk
+
 install:
 	$(install) -d $(DESTDIR)$(bindir)
-	$(install) -m $(binmode) $(binprogs).sh $(DESTDIR)$(bindir)/$(binprogs)
+	$(install) -m $(binmode) $(binprogs) $(binprogs).sh $(DESTDIR)$(bindir)
 
 clean:
-	rm -f *.o
+	rm -f tmpfiles *.o
 
 .PHONY: all clean install
