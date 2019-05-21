@@ -28,11 +28,17 @@ include ./build.mk
 VPATH += src
 include ./src/module.mk
 
+# The tests.
+VPATH += test
+include ./test/module.mk
+check: tmpfiles_test
+	./tmpfiles_test
+
 install:
 	$(install) -d $(DESTDIR)$(bindir)
 	$(install) -m $(binmode) $(binprogs) $(binprogs).sh $(DESTDIR)$(bindir)
 
 clean:
-	rm -f tmpfiles *.o
+	rm -f tmpfiles tmpfiles_test *.o
 
-.PHONY: all clean install
+.PHONY: all check clean install
