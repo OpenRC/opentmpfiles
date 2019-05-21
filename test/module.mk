@@ -2,6 +2,7 @@
 LDFLAGS-tmpfiles_test = -pthread
 LDLIBS-tmpfiles_test = -lgtest
 SRC-tmpfiles_test := \
+	xfuncs_test.cc \
 
 OBJ-tmpfiles_test := $(SRC-tmpfiles_test:.cc=.o)
 tmpfiles_test: $(OBJ-tmpfiles_test) $(SRC-libtmpfiles.so:.c=.o)

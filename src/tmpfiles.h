@@ -18,4 +18,6 @@
 /* This needs to come first as it provides C library & compiler details. */
 #include "headers.h"
 
+#include "xfuncs.h"
+
 #endif
