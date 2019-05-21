@@ -1,0 +1,5 @@
+# Generated dependency files.
+.deps*
+
+# Compiled objects/libs.
+*.[oa]
