@@ -1,4 +1,5 @@
 SRC-tmpfiles := \
+	cli.c \
 	main.c \
 
 SRC-libtmpfiles.so := \

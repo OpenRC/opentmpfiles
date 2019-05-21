@@ -2,6 +2,7 @@
 LDFLAGS-tmpfiles_test = -pthread
 LDLIBS-tmpfiles_test = -lgtest
 SRC-tmpfiles_test := \
+	cli_test.cc \
 	set_test.cc \
 	xfuncs_test.cc \
 

@@ -20,5 +20,6 @@
 
 #include "xfuncs.h"
 #include "set.h"
+#include "cli.h"
 
 #endif

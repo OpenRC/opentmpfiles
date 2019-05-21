@@ -23,4 +23,7 @@
 #include <string.h>
 #include <unistd.h>
 
+/* Some compiler attributes we find useful. */
+#define attribute_noreturn __attribute__((__noreturn__))
+
 #endif

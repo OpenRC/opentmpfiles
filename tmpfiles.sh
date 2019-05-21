@@ -16,7 +16,16 @@
 # as of 2012/03/12 and also implements some more recent features
 #
 
-DRYRUN=0
+# Any errors we've accumulated from processing.
+error=0
+# XXX: No idea why this is here.
+LINENO=0
+
+# Make sure we aren't run directly anymore.
+if [ $# -ne 1 ] || [ "$1" != "--run-by-tmpfiles-wrapper" ]; then
+	echo "tmpfiles.sh: this must not be run directly; use tmpfiles instead" >&2
+	exit 1
+fi
 
 checkprefix() {
 	n=$1
@@ -33,11 +42,6 @@ warninvalid() {
 	printf "tmpfiles: ignoring invalid entry on line %d of \`%s'\n" "$LINENUM" "$FILE"
 	error=$(( error+1 ))
 } >&2
-
-invalid_option() {
-	printf "tmpfiles: invalid option '%s'\n" "$1" >&2
-	exit 1
-}
 
 dryrun_or_real() {
 	local dryrun=
@@ -429,49 +433,6 @@ _Z() {
 	CHOPTS=-R relabel "$@"
 }
 
-usage() {
-	printf 'usage: %s [--exclude-prefix=path] [--prefix=path] [--boot] [--create] [--remove] [--clean] [--verbose] [--dry-run]\n' "${0##*/}"
-	exit ${1:-0}
-}
-
-version() {
-	# We don't record the version info anywhere currently.
-	echo "opentmpfiles"
-	exit 0
-}
-
-BOOT=0 CREATE=0 REMOVE=0 CLEAN=0 VERBOSE=0 DRYRUN=0 error=0 LINENO=0
-EXCLUDE=
-PREFIX=
-FILES=
-
-while [ $# -gt 0 ]; do
-	case $1 in
-		--boot) BOOT=1 ;;
-		--create) CREATE=1 ;;
-		--remove) REMOVE=1 ;;
-		--clean) CLEAN=1 ;; # TODO: Not implemented
-		--verbose) VERBOSE=1 ;;
-		--dryrun|--dry-run) DRYRUN=1 ;;
-		--exclude-prefix=*) EXCLUDE="${EXCLUDE}${1##--exclude-prefix=} " ;;
-		--prefix=*) PREFIX="${PREFIX}${1##--prefix=} " ;;
-		-h|--help) usage ;;
-		--version) version ;;
-		-*) invalid_option "$1" ;;
-		*) FILES="${FILES} $1"
-	esac
-	shift
-done
-
-if [ $(( CLEAN )) -eq 1 ] ; then
-	printf '%s clean mode is not implemented\n' "${0##*/}"
-	exit 1
-fi
-
-if [ "$CREATE$REMOVE" = '00' ]; then
-	usage 1 >&2
-fi
-
 # XXX: The harcoding of /usr/lib/ is an explicit choice by upstream
 tmpfiles_dirs='/usr/lib/tmpfiles.d /run/tmpfiles.d /etc/tmpfiles.d'
 tmpfiles_basenames=''
@@ -509,8 +470,6 @@ for b in ${FILES} ; do
 		[ -f "${real_f}" ] && tmpfiles_d="${tmpfiles_d} ${real_f}"
 	fi
 done
-
-error=0
 
 # loop through the gathered fragments, sorted globally by filename.
 # `/run/tmpfiles/foo.conf' will always be read after `/etc/tmpfiles.d/bar.conf'
