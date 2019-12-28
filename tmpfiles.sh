@@ -61,38 +61,22 @@ _chattr() {
 relabel() {
 	local path
 	local paths=$1 mode=$2 uid=$3 gid=$4
-	local status x
+	local status
 
 	status=0
 	for path in ${paths}; do
 		if [ -e "$path" ]; then
 			if [ -x /sbin/restorecon ]; then
-				dryrun_or_real restorecon $CHOPTS "$path"
-				x=$?
-				if [ $x -ne 0 ]; then
-					status=$x
-				fi
+				dryrun_or_real restorecon $CHOPTS "$path" || status="$?"
 			fi
 			if [ $uid != '-' ]; then
-				dryrun_or_real chown $CHOPTS "$uid" "$path"
-				x=$?
-				if [ $x -ne 0 ]; then
-					status=$x
-				fi
+				dryrun_or_real chown $CHOPTS "$uid" "$path" || status="$?"
 			fi
 			if [ $gid != '-' ]; then
-				dryrun_or_real chgrp $CHOPTS "$gid" "$path"
-				x=$?
-				if [ $x -ne 0 ]; then
-					status=$x
-				fi
+				dryrun_or_real chgrp $CHOPTS "$gid" "$path" || status="$?"
 			fi
 			if [ $mode != '-' ]; then
-				dryrun_or_real chmod $CHOPTS "$mode" "$path"
-				x=$?
-				if [ $x -ne 0 ]; then
-					status=$x
-				fi
+				dryrun_or_real chmod $CHOPTS "$mode" "$path" || status="$?"
 			fi
 		fi
 	done
@@ -358,20 +342,16 @@ _r() {
 	# globs in place of normal path names.
 	local path
 	local paths=$1
-	local status x
+	local status
 
 	[ $REMOVE -gt 0 ] || return 0
 
 	status=0
 	for path in ${paths}; do
 		if [ -f "$path" ]; then
-			dryrun_or_real rm -f "$path"
+			dryrun_or_real rm -f "$path" || status="$?"
 		elif [ -d "$path" ]; then
-			dryrun_or_real rmdir "$path"
-		fi
-		x=$?
-		if [ $x -ne 0 ]; then
-			status=$x
+			dryrun_or_real rmdir "$path" || status="$?"
 		fi
 	done
 	return $status
@@ -382,18 +362,14 @@ _R() {
 	# Lines of this type accept shell-style globs in place of normal path names.
 	local path
 	local paths=$1
-	local status x
+	local status
 
 	[ $REMOVE -gt 0 ] || return 0
 
 	status=0
 	for path in ${paths}; do
 		if [ -d "$path" ]; then
-			dryrun_or_real rm -rf --one-file-system "$path"
-			x=$?
-			if [ $x -ne 0 ]; then
-				status=$x
-			fi
+			dryrun_or_real rm -rf --one-file-system "$path" || status="$?"
 	fi
 	done
 	return $status
