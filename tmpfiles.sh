@@ -217,7 +217,7 @@ _C() {
 		if [ $gid != '-' ]; then
 			dryrun_or_real chgrp "$gid" "$path"
 		fi
-		if [ $mode != '-']; then
+		if [ $mode != '-' ]; then
 			dryrun_or_real chmod "$mode" "$path"
 		fi
 	fi
