@@ -1,0 +1,9 @@
+# Generated dependency files.
+.deps*
+
+# Compiled objects/libs.
+*.[oa]
+
+# Our project programs.
+/tmpfiles
+/tmpfiles_test

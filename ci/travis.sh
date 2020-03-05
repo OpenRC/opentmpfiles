@@ -40,6 +40,9 @@ m() {
 
 main() {
 	m
+	# The CI doesn't include a usable gtest install, so bootstrap it.
+	m gtest
+	m check
 	m install DESTDIR="${PWD}/destdir"
 }
 main "$@"
