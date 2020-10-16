@@ -58,6 +58,10 @@ _chattr() {
 	dryrun_or_real chattr $1 "$attr" -- $3
 }
 
+_setfacl() {
+	dryrun_or_real setfacl -P $1 $2 "$3" -- $4
+}
+
 relabel() {
 	local path
 	local paths=$1 mode=$2 uid=$3 gid=$4
@@ -281,6 +285,24 @@ _Q() {
 	# leaf quota group.
 	# TODO: Implement btrfs subvol creation.
 	_d "$@"
+}
+
+_a() {
+	# Set/add file/directory ACL. Lines of this type accept
+	# shell-style globs in place of normal path names.
+	# The format of the argument field matches setfacl
+	local ACTION='--remove-all --set'
+	[ "$FORCE" -gt 0 ] && ACTION='--modify'
+	_setfacl '' "$ACTION" "$6" "$1"
+}
+
+_A() {
+	# Recursively set/add file/directory ACL. Lines of this type accept
+	# shell-syle globs in place of normal path names.
+	# Does not follow symlinks
+	local ACTION='--remove-all --set'
+	[ "$FORCE" -gt 0 ] && ACTION='--modify'
+	_setfacl -R "$ACTION" "$6" "$1"
 }
 
 _h() {
@@ -527,7 +549,7 @@ for FILE in $tmpfiles_d ; do
 
 		# whine about invalid entries
 		case $cmd in
-			f|F|w|d|D|v|p|L|c|C|b|x|X|r|R|z|Z|q|Q|h|H) ;;
+			f|F|w|d|D|v|p|L|c|C|b|x|X|r|R|z|Z|q|Q|h|H|a|A) ;;
 			*) warninvalid ; continue ;;
 		esac
 
