@@ -526,7 +526,7 @@ for FILE in $tmpfiles_d ; do
 
 	# XXX: Upstream says whitespace is NOT permitted in the Path argument.
 	# But IS allowed when globs are expanded for the x/r/R/z/Z types.
-	while read cmd path mode uid gid age arg; do
+	while read -r cmd path mode uid gid age arg rest; do
 		LINENUM=$(( LINENUM+1 ))
 		FORCE=0
 
