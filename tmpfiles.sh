@@ -21,7 +21,7 @@ DRYRUN=0
 checkprefix() {
 	n=$1
 	shift
-	for x in $@; do
+	for x in "$@"; do
 		case $n in
 			${x}*) return 0 ;;
 	esac
@@ -42,7 +42,7 @@ invalid_option() {
 dryrun_or_real() {
 	local dryrun=
 	if [ $DRYRUN -eq 1 ]; then
-		dryrun=echo
+		dryrun="echo"
 	fi
 	$dryrun "$@"
 }
@@ -55,11 +55,11 @@ _chattr() {
 		*) attr="+$attr" ;;
 	esac
 	local IFS=
-	dryrun_or_real chattr $1 "$attr" -- $3
+	dryrun_or_real chattr "$1" "$attr" -- "$3"
 }
 
 _setfacl() {
-	dryrun_or_real setfacl -P $1 $2 "$3" -- $4
+	dryrun_or_real setfacl -P "$1" "$2" "$3" -- "$4"
 }
 
 relabel() {
@@ -73,13 +73,13 @@ relabel() {
 			if [ -x /sbin/restorecon ]; then
 				dryrun_or_real restorecon $CHOPTS "$path" || status="$?"
 			fi
-			if [ $uid != '-' ]; then
+			if [ "$uid" != '-' ]; then
 				dryrun_or_real chown $CHOPTS "$uid" "$path" || status="$?"
 			fi
-			if [ $gid != '-' ]; then
+			if [ "$gid" != '-' ]; then
 				dryrun_or_real chgrp $CHOPTS "$gid" "$path" || status="$?"
 			fi
-			if [ $mode != '-' ]; then
+			if [ "$mode" != '-' ]; then
 				dryrun_or_real chmod $CHOPTS "$mode" "$path" || status="$?"
 			fi
 		fi
@@ -90,7 +90,7 @@ relabel() {
 splitpath() {
     local path=$1
     while [ -n "$path" ]; do
-        echo $path
+        printf '%s\n' "$path"
         path=${path%/*}
     done
 }
@@ -98,7 +98,7 @@ splitpath() {
 _restorecon() {
     local path=$1
     if [ -x /sbin/restorecon ]; then
-        dryrun_or_real restorecon -F $(splitpath "$path")
+        dryrun_or_real restorecon -F "$(splitpath "$path")"
     fi
 }
 
@@ -166,7 +166,7 @@ _b() {
 		mode=0644
 	fi
 	if [ ! -e "$path" ]; then
-		dryrun_or_real mknod -m $mode $path b ${arg%:*} ${arg#*:}
+		dryrun_or_real mknod -m $mode "$path" b "${arg%:*}" "${arg#*:}"
 		_restorecon "$path"
 		dryrun_or_real chown $uid "$path"
 		dryrun_or_real chgrp $gid "$path"
@@ -186,7 +186,7 @@ _c() {
 		mode=0644
 	fi
 	if [ ! -e "$path" ]; then
-		dryrun_or_real mknod -m $mode $path c ${arg%:*} ${arg#*:}
+		dryrun_or_real mknod -m $mode "$path" c "${arg%:*}" "${arg#*:}"
 		_restorecon "$path"
 		dryrun_or_real chown $uid "$path"
 		dryrun_or_real chgrp $gid "$path"
@@ -199,13 +199,13 @@ _C() {
 	if [ ! -e "$path" ]; then
 		dryrun_or_real cp -r "$arg" "$path"
 		_restorecon "$path"
-		if [ $uid != '-' ]; then
+		if [ "$uid" != '-' ]; then
 			dryrun_or_real chown "$uid" "$path"
 		fi
-		if [ $gid != '-' ]; then
+		if [ "$gid" != '-' ]; then
 			dryrun_or_real chgrp "$gid" "$path"
 		fi
-		if [ $mode != '-' ]; then
+		if [ "$mode" != '-' ]; then
 			dryrun_or_real chmod "$mode" "$path"
 		fi
 	fi
@@ -215,7 +215,7 @@ _f() {
 	# Create a file if it doesn't exist yet
 	local path=$1 mode=$2 uid=$3 gid=$4 age=$5 arg=$6
 
-	[ $CREATE -gt 0 ] || return 0
+	[ "$CREATE" -gt 0 ] || return 0
 
 	if [ ! -e "$path" ]; then
 		createfile "$mode" "$uid" "$gid" "$path"
@@ -229,7 +229,7 @@ _F() {
 	# Create or truncate a file
 	local path=$1 mode=$2 uid=$3 gid=$4 age=$5 arg=$6
 
-	[ $CREATE -gt 0 ] || return 0
+	[ "$CREATE" -gt 0 ] || return 0
 
 	dryrun_or_real rm -f "$path"
 	createfile "$mode" "$uid" "$gid" "$path"
@@ -242,7 +242,7 @@ _d() {
 	# Create a directory if it doesn't exist yet
 	local path=$1 mode=$2 uid=$3 gid=$4
 
-	if [ $CREATE -gt 0 ]; then
+	if [ "$CREATE" -gt 0 ]; then
 		createdirectory "$mode" "$uid" "$gid" "$path"
 		_restorecon "$path"
 	fi
@@ -252,12 +252,12 @@ _D() {
 	# Create or empty a directory
 	local path=$1 mode=$2 uid=$3 gid=$4
 
-	if [ -d "$path" ] && [ $REMOVE -gt 0 ]; then
+	if [ -d "$path" ] && [ "$REMOVE" -gt 0 ]; then
 		dryrun_or_real find "$path" -mindepth 1 -maxdepth 1 -xdev -exec rm -rf {} +
 		_restorecon "$path"
 	fi
 
-	if [ $CREATE -gt 0 ]; then
+	if [ "$CREATE" -gt 0 ]; then
 		createdirectory "$mode" "$uid" "$gid" "$path"
 		_restorecon "$path"
 	fi
@@ -332,7 +332,7 @@ _p() {
 	# Create a named pipe (FIFO) if it doesn't exist yet
 	local path=$1 mode=$2 uid=$3 gid=$4
 
-	[ $CREATE -gt 0 ] || return 0
+	[ "$CREATE" -gt 0 ] || return 0
 
 	if [ ! -p "$path" ]; then
 		createpipe "$mode" "$uid" "$gid" "$path"
@@ -366,7 +366,7 @@ _r() {
 	local paths=$1
 	local status
 
-	[ $REMOVE -gt 0 ] || return 0
+	[ "$REMOVE" -gt 0 ] || return 0
 
 	status=0
 	for path in ${paths}; do
@@ -386,7 +386,7 @@ _R() {
 	local paths=$1
 	local status
 
-	[ $REMOVE -gt 0 ] || return 0
+	[ "$REMOVE" -gt 0 ] || return 0
 
 	status=0
 	for path in ${paths}; do
@@ -413,7 +413,7 @@ _z() {
 	# Set ownership, access mode and relabel security context of a file or
 	# directory if it exists. Lines of this type accept shell-style globs in
 	# place of normal path names.
-	[ $CREATE -gt 0 ] || return 0
+	[ "$CREATE" -gt 0 ] || return 0
 
 	relabel "$@"
 }
@@ -422,14 +422,14 @@ _Z() {
 	# Recursively set ownership, access mode and relabel security context of a
 	# path and all its subdirectories (if it is a directory). Lines of this type
 	# accept shell-style globs in place of normal path names.
-	[ $CREATE -gt 0 ] || return 0
+	[ "$CREATE" -gt 0 ] || return 0
 
 	CHOPTS=-R relabel "$@"
 }
 
 usage() {
 	printf 'usage: %s [--exclude-prefix=path] [--prefix=path] [--boot] [--create] [--remove] [--clean] [--verbose] [--dry-run]\n' "${0##*/}"
-	exit ${1:-0}
+	exit "${1:-0}"
 }
 
 version() {
@@ -481,14 +481,14 @@ if [ -z "${FILES}" ]; then
 	# `/etc/tmpfiles.d/foo.conf' supersedes `/usr/lib/tmpfiles.d/foo.conf'.
 	# `/run/tmpfiles/foo.conf' will always be read after `/etc/tmpfiles.d/bar.conf'
 	for d in ${tmpfiles_dirs} ; do
-		[ -d $d ] && for f in ${d}/*.conf ; do
+		[ -d "$d" ] && for f in "${d}"/*.conf ; do
 			case "${f##*/}" in
 				systemd.conf|systemd-*.conf) continue;;
 			esac
-			[ -f $f ] && tmpfiles_basenames="${tmpfiles_basenames}\n${f##*/}"
+			[ -f "$f" ] && tmpfiles_basenames="${tmpfiles_basenames}\n${f##*/}"
 		done # for f in ${d}
 	done # for d in ${tmpfiles_dirs}
-	FILES="$(printf "${tmpfiles_basenames}\n" | sort -u )"
+	FILES="$(printf '%s\n' "${tmpfiles_basenames}" | sort -u )"
 fi
 
 tmpfiles_d=''
@@ -531,7 +531,7 @@ for FILE in $tmpfiles_d ; do
 		FORCE=0
 
 		# Unless we have both command and path, skip this line.
-		if [ -z "$cmd" -o -z "$path" ]; then
+		if [ -z "$cmd" ] || [ -z "$path" ]; then
 			continue
 		fi
 
@@ -554,7 +554,7 @@ for FILE in $tmpfiles_d ; do
 		esac
 
 		# fall back on defaults when parameters are passed as '-'
-		if [ "$mode" = '-' -o "$mode" = '' ]; then
+		if [ "$mode" = '-' ] || [ "$mode" = '' ]; then
 			case "$cmd" in
 				p|f|F) mode=0644 ;;
 				d|D|v) mode=0755 ;;
@@ -562,28 +562,28 @@ for FILE in $tmpfiles_d ; do
 			esac
 		fi
 
-		[ "$uid" = '-' -o "$uid" = '' ] && uid=0
-		[ "$gid" = '-' -o "$gid" = '' ] && gid=0
-		[ "$age" = '-' -o "$age" = '' ] && age=0
-		[ "$arg" = '-' -o "$arg" = '' ] && arg=''
+		[ "$uid" = '-' ] || [ "$uid" = '' ] && uid=0
+		[ "$gid" = '-' ] || [ "$gid" = '' ] && gid=0
+		[ "$age" = '-' ] || [ "$age" = '' ] && age=0
+		[ "$arg" = '-' ] || [ "$arg" = '' ] && arg=''
 		set -- "$path" "$mode" "$uid" "$gid" "$age" "$arg"
 
-		[ -n "$EXCLUDE" ] && checkprefix $path $EXCLUDE && continue
-		[ -n "$PREFIX" ] && ! checkprefix $path $PREFIX && continue
+		[ -n "$EXCLUDE" ] && checkprefix "$path" "$EXCLUDE" && continue
+		[ -n "$PREFIX" ] && ! checkprefix "$path" "$PREFIX" && continue
 
-		if [ $FORCE -gt 0 ]; then
+		if [ "$FORCE" -gt 0 ]; then
 			case $cmd in
 				p|L|c|b) [ -f "$path" ] && dryrun_or_real rm -f "$path"
 			esac
 		fi
 
-		[ "$VERBOSE" -eq "1" ] && echo _$cmd "$@"
-		_$cmd "$@"
+		[ "$VERBOSE" -eq "1" ] && echo "_$cmd" "$@"
+		"_$cmd" "$@"
 		rc=$?
 		if [ "${DRYRUN}" -eq "0" ]; then
 			[ $rc -ne 0 ] && error=$((error + 1))
 		fi
-	done <$FILE
+	done <"$FILE"
 done
 
 exit $error
