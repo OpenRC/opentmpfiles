@@ -4,11 +4,12 @@ project('opentmpfiles', 'c',
   default_options : [
     'c_std=c99',
 	'prefix=/usr',
+	'rootbindir=/bin',
     'warning_level=3',
     ],
   meson_version : '>=0.52.1')
 
 install_data('tmpfiles.sh',
-	install_dir : get_option('bindir'),
+	install_dir : get_option('rootbindir'),
 		install_mode : 'rwxr-xr-x',
 	rename : 'tmpfiles')

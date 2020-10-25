@@ -1,0 +1,2 @@
+option('rootbindir', type : 'string',
+  description : '''override the root binary directory ['/bin']''')
