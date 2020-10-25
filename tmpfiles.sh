@@ -488,7 +488,8 @@ if [ -z "${FILES}" ]; then
 			[ -f "$f" ] && tmpfiles_basenames="${tmpfiles_basenames}\n${f##*/}"
 		done # for f in ${d}
 	done # for d in ${tmpfiles_dirs}
-	FILES="$(printf '%s\n' "${tmpfiles_basenames}" | sort -u )"
+	# shellcheck disable=SC2059
+	FILES="$(printf "${tmpfiles_basenames}" | sort -u )"
 fi
 
 tmpfiles_d=''
