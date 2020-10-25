@@ -22,7 +22,7 @@ checkprefix() {
 	n=$1
 	shift
 	for x in "$@"; do
-		case $n in
+		case ${n} in
 			${x}*) return 0 ;;
 	esac
 	done
@@ -30,7 +30,7 @@ checkprefix() {
 }
 
 warninvalid() {
-	printf "tmpfiles: ignoring invalid entry on line %d of \`%s'\n" "$LINENUM" "$FILE"
+	printf "tmpfiles: ignoring invalid entry on line %d of \`%s'\n" "${LINENUM}" "${FILE}"
 	error=$(( error+1 ))
 } >&2
 
@@ -41,21 +41,21 @@ invalid_option() {
 
 dryrun_or_real() {
 	local dryrun=
-	if [ $DRYRUN -eq 1 ]; then
+	if [ ${DRYRUN} -eq 1 ]; then
 		dryrun="echo"
 	fi
-	$dryrun "$@"
+	${dryrun} "$@"
 }
 
 _chattr() {
 	local attr="$2"
-	case $attr in
+	case ${attr} in
 		[+-=]*) : ;;
 		'') return ;;
-		*) attr="+$attr" ;;
+		*) attr="+${attr}" ;;
 	esac
 	local IFS=
-	dryrun_or_real chattr "$1" "$attr" -- "$3"
+	dryrun_or_real chattr "$1" "${attr}" -- "$3"
 }
 
 _setfacl() {
@@ -69,28 +69,28 @@ relabel() {
 
 	status=0
 	for path in ${paths}; do
-		if [ -e "$path" ]; then
+		if [ -e "${path}" ]; then
 			if [ -x /sbin/restorecon ]; then
-				dryrun_or_real restorecon $CHOPTS "$path" || status="$?"
+				dryrun_or_real restorecon ${CHOPTS} "${path}" || status="$?"
 			fi
-			if [ "$uid" != '-' ]; then
-				dryrun_or_real chown $CHOPTS "$uid" "$path" || status="$?"
+			if [ "${uid}" != '-' ]; then
+				dryrun_or_real chown ${CHOPTS} "${uid}" "${path}" || status="$?"
 			fi
-			if [ "$gid" != '-' ]; then
-				dryrun_or_real chgrp $CHOPTS "$gid" "$path" || status="$?"
+			if [ "${gid}" != '-' ]; then
+				dryrun_or_real chgrp ${CHOPTS} "${gid}" "${path}" || status="$?"
 			fi
-			if [ "$mode" != '-' ]; then
-				dryrun_or_real chmod $CHOPTS "$mode" "$path" || status="$?"
+			if [ "${mode}" != '-' ]; then
+				dryrun_or_real chmod ${CHOPTS} "${mode}" "${path}" || status="$?"
 			fi
 		fi
 	done
-	return $status
+	return ${status}
 }
 
 splitpath() {
     local path=$1
-    while [ -n "$path" ]; do
-        printf '%s\n' "$path"
+    while [ -n "${path}" ]; do
+        printf '%s\n' "${path}"
         path=${path%/*}
     done
 }
@@ -98,115 +98,115 @@ splitpath() {
 _restorecon() {
     local path=$1
     if [ -x /sbin/restorecon ]; then
-        dryrun_or_real restorecon -F "$(splitpath "$path")"
+        dryrun_or_real restorecon -F "$(splitpath "${path}")"
     fi
 }
 
 createdirectory() {
 	local mode="$1" uid="$2" gid="$3" path="$4"
-	[ -d "$path" ] || dryrun_or_real mkdir -p "$path"
-	if [ "$uid" = - ]; then
+	[ -d "${path}" ] || dryrun_or_real mkdir -p "${path}"
+	if [ "${uid}" = - ]; then
 		uid=root
 	fi
-	if [ "$gid" = - ]; then
+	if [ "${gid}" = - ]; then
 		gid=root
 	fi
-	if [ "$mode" = - ]; then
+	if [ "${mode}" = - ]; then
 		mode=0755
 	fi
-	dryrun_or_real chown $uid "$path"
-	dryrun_or_real chgrp $gid "$path"
-	dryrun_or_real chmod $mode "$path"
+	dryrun_or_real chown ${uid} "${path}"
+	dryrun_or_real chgrp ${gid} "${path}"
+	dryrun_or_real chmod ${mode} "${path}"
 }
 
 createfile() {
 	local mode="$1" uid="$2" gid="$3" path="$4"
-	dryrun_or_real touch "$path"
-	if [ "$uid" = - ]; then
+	dryrun_or_real touch "${path}"
+	if [ "${uid}" = - ]; then
 		uid=root
 	fi
-	if [ "$gid" = - ]; then
+	if [ "${gid}" = - ]; then
 		gid=root
 	fi
-	if [ "$mode" = - ]; then
+	if [ "${mode}" = - ]; then
 		mode=0644
 	fi
-	dryrun_or_real chown $uid "$path"
-	dryrun_or_real chgrp $gid "$path"
-	dryrun_or_real chmod $mode "$path"
+	dryrun_or_real chown ${uid} "${path}"
+	dryrun_or_real chgrp ${gid} "${path}"
+	dryrun_or_real chmod ${mode} "${path}"
 }
 
 createpipe() {
 	local mode="$1" uid="$2" gid="$3" path="$4"
-	dryrun_or_real mkfifo "$path"
-	if [ "$uid" = - ]; then
+	dryrun_or_real mkfifo "${path}"
+	if [ "${uid}" = - ]; then
 		uid=root
 	fi
-	if [ "$gid" = - ]; then
+	if [ "${gid}" = - ]; then
 		gid=root
 	fi
-	if [ "$mode" = - ]; then
+	if [ "${mode}" = - ]; then
 		mode=0644
 	fi
-	dryrun_or_real chown $uid "$path"
-	dryrun_or_real chgrp $gid "$path"
-	dryrun_or_real chmod $mode "$path"
+	dryrun_or_real chown ${uid} "${path}"
+	dryrun_or_real chgrp ${gid} "${path}"
+	dryrun_or_real chmod ${mode} "${path}"
 }
 
 _b() {
 	# Create a block device node if it doesn't exist yet
 	local path=$1 mode=$2 uid=$3 gid=$4 age=$5 arg=$6
-	if [ "$uid" = - ]; then
+	if [ "${uid}" = - ]; then
 		uid=root
 	fi
-	if [ "$gid" = - ]; then
+	if [ "${gid}" = - ]; then
 		gid=root
 	fi
-	if [ "$mode" = - ]; then
+	if [ "${mode}" = - ]; then
 		mode=0644
 	fi
-	if [ ! -e "$path" ]; then
-		dryrun_or_real mknod -m $mode "$path" b "${arg%:*}" "${arg#*:}"
-		_restorecon "$path"
-		dryrun_or_real chown $uid "$path"
-		dryrun_or_real chgrp $gid "$path"
+	if [ ! -e "${path}" ]; then
+		dryrun_or_real mknod -m ${mode} "${path}" b "${arg%:*}" "${arg#*:}"
+		_restorecon "${path}"
+		dryrun_or_real chown ${uid} "${path}"
+		dryrun_or_real chgrp ${gid} "${path}"
 	fi
 }
 
 _c() {
 	# Create a character device node if it doesn't exist yet
 	local path=$1 mode=$2 uid=$3 gid=$4 age=$5 arg=$6
-	if [ "$uid" = - ]; then
+	if [ "${uid}" = - ]; then
 		uid=root
 	fi
-	if [ "$gid" = - ]; then
+	if [ "${gid}" = - ]; then
 		gid=root
 	fi
-	if [ "$mode" = - ]; then
+	if [ "${mode}" = - ]; then
 		mode=0644
 	fi
-	if [ ! -e "$path" ]; then
-		dryrun_or_real mknod -m $mode "$path" c "${arg%:*}" "${arg#*:}"
-		_restorecon "$path"
-		dryrun_or_real chown $uid "$path"
-		dryrun_or_real chgrp $gid "$path"
+	if [ ! -e "${path}" ]; then
+		dryrun_or_real mknod -m ${mode} "${path}" c "${arg%:*}" "${arg#*:}"
+		_restorecon "${path}"
+		dryrun_or_real chown ${uid} "${path}"
+		dryrun_or_real chgrp ${gid} "${path}"
 	fi
 }
 
 _C() {
 	# recursively copy a file or directory
 	local path=$1 mode=$2 uid=$3 gid=$4 age=$5 arg=$6
-	if [ ! -e "$path" ]; then
-		dryrun_or_real cp -r "$arg" "$path"
-		_restorecon "$path"
-		if [ "$uid" != '-' ]; then
-			dryrun_or_real chown "$uid" "$path"
+	if [ ! -e "${path}" ]; then
+		dryrun_or_real cp -r "${arg}" "${path}"
+		_restorecon "${path}"
+		if [ "${uid}" != '-' ]; then
+			dryrun_or_real chown "${uid}" "${path}"
 		fi
-		if [ "$gid" != '-' ]; then
-			dryrun_or_real chgrp "$gid" "$path"
+		if [ "${gid}" != '-' ]; then
+			dryrun_or_real chgrp "${gid}" "${path}"
 		fi
-		if [ "$mode" != '-' ]; then
-			dryrun_or_real chmod "$mode" "$path"
+		if [ "${mode}" != '-' ]; then
+			dryrun_or_real chmod "${mode}" "${path}"
 		fi
 	fi
 }
@@ -215,11 +215,11 @@ _f() {
 	# Create a file if it doesn't exist yet
 	local path=$1 mode=$2 uid=$3 gid=$4 age=$5 arg=$6
 
-	[ "$CREATE" -gt 0 ] || return 0
+	[ "${CREATE}" -gt 0 ] || return 0
 
-	if [ ! -e "$path" ]; then
-		createfile "$mode" "$uid" "$gid" "$path"
-		if [ -n "$arg" ]; then
+	if [ ! -e "${path}" ]; then
+		createfile "${mode}" "${uid}" "${gid}" "${path}"
+		if [ -n "${arg}" ]; then
 			_w "$@"
 		fi
 	fi
@@ -229,11 +229,11 @@ _F() {
 	# Create or truncate a file
 	local path=$1 mode=$2 uid=$3 gid=$4 age=$5 arg=$6
 
-	[ "$CREATE" -gt 0 ] || return 0
+	[ "${CREATE}" -gt 0 ] || return 0
 
-	dryrun_or_real rm -f "$path"
-	createfile "$mode" "$uid" "$gid" "$path"
-	if [ -n "$arg" ]; then
+	dryrun_or_real rm -f "${path}"
+	createfile "${mode}" "${uid}" "${gid}" "${path}"
+	if [ -n "${arg}" ]; then
 		_w "$@"
 	fi
 }
@@ -242,9 +242,9 @@ _d() {
 	# Create a directory if it doesn't exist yet
 	local path=$1 mode=$2 uid=$3 gid=$4
 
-	if [ "$CREATE" -gt 0 ]; then
-		createdirectory "$mode" "$uid" "$gid" "$path"
-		_restorecon "$path"
+	if [ "${CREATE}" -gt 0 ]; then
+		createdirectory "${mode}" "${uid}" "${gid}" "${path}"
+		_restorecon "${path}"
 	fi
 }
 
@@ -252,14 +252,14 @@ _D() {
 	# Create or empty a directory
 	local path=$1 mode=$2 uid=$3 gid=$4
 
-	if [ -d "$path" ] && [ "$REMOVE" -gt 0 ]; then
-		dryrun_or_real find "$path" -mindepth 1 -maxdepth 1 -xdev -exec rm -rf {} +
-		_restorecon "$path"
+	if [ -d "${path}" ] && [ "${REMOVE}" -gt 0 ]; then
+		dryrun_or_real find "${path}" -mindepth 1 -maxdepth 1 -xdev -exec rm -rf {} +
+		_restorecon "${path}"
 	fi
 
-	if [ "$CREATE" -gt 0 ]; then
-		createdirectory "$mode" "$uid" "$gid" "$path"
-		_restorecon "$path"
+	if [ "${CREATE}" -gt 0 ]; then
+		createdirectory "${mode}" "${uid}" "${gid}" "${path}"
+		_restorecon "${path}"
 	fi
 }
 
@@ -292,8 +292,8 @@ _a() {
 	# shell-style globs in place of normal path names.
 	# The format of the argument field matches setfacl
 	local ACTION='--remove-all --set'
-	[ "$FORCE" -gt 0 ] && ACTION='--modify'
-	_setfacl '' "$ACTION" "$6" "$1"
+	[ "${FORCE}" -gt 0 ] && ACTION='--modify'
+	_setfacl '' "${ACTION}" "$6" "$1"
 }
 
 _A() {
@@ -301,8 +301,8 @@ _A() {
 	# shell-syle globs in place of normal path names.
 	# Does not follow symlinks
 	local ACTION='--remove-all --set'
-	[ "$FORCE" -gt 0 ] && ACTION='--modify'
-	_setfacl -R "$ACTION" "$6" "$1"
+	[ "${FORCE}" -gt 0 ] && ACTION='--modify'
+	_setfacl -R "${ACTION}" "$6" "$1"
 }
 
 _h() {
@@ -322,20 +322,20 @@ _H() {
 _L() {
 	# Create a symlink if it doesn't exist yet
 	local path=$1 mode=$2 uid=$3 gid=$4 age=$5 arg=$6
-	if [ ! -e "$path" ]; then
-		dryrun_or_real ln -s "$arg" "$path"
+	if [ ! -e "${path}" ]; then
+		dryrun_or_real ln -s "${arg}" "${path}"
 	fi
-	_restorecon "$path"
+	_restorecon "${path}"
 }
 
 _p() {
 	# Create a named pipe (FIFO) if it doesn't exist yet
 	local path=$1 mode=$2 uid=$3 gid=$4
 
-	[ "$CREATE" -gt 0 ] || return 0
+	[ "${CREATE}" -gt 0 ] || return 0
 
-	if [ ! -p "$path" ]; then
-		createpipe "$mode" "$uid" "$gid" "$path"
+	if [ ! -p "${path}" ]; then
+		createpipe "${mode}" "${uid}" "${gid}" "${path}"
 	fi
 }
 
@@ -366,17 +366,17 @@ _r() {
 	local paths=$1
 	local status
 
-	[ "$REMOVE" -gt 0 ] || return 0
+	[ "${REMOVE}" -gt 0 ] || return 0
 
 	status=0
 	for path in ${paths}; do
-		if [ -f "$path" ]; then
-			dryrun_or_real rm -f "$path" || status="$?"
-		elif [ -d "$path" ]; then
-			dryrun_or_real rmdir "$path" || status="$?"
+		if [ -f "${path}" ]; then
+			dryrun_or_real rm -f "${path}" || status="$?"
+		elif [ -d "${path}" ]; then
+			dryrun_or_real rmdir "${path}" || status="$?"
 		fi
 	done
-	return $status
+	return ${status}
 }
 
 _R() {
@@ -386,25 +386,25 @@ _R() {
 	local paths=$1
 	local status
 
-	[ "$REMOVE" -gt 0 ] || return 0
+	[ "${REMOVE}" -gt 0 ] || return 0
 
 	status=0
 	for path in ${paths}; do
-		if [ -d "$path" ]; then
-			dryrun_or_real rm -rf --one-file-system "$path" || status="$?"
+		if [ -d "${path}" ]; then
+			dryrun_or_real rm -rf --one-file-system "${path}" || status="$?"
 	fi
 	done
-	return $status
+	return ${status}
 }
 
 _w() {
 	# Write the argument parameter to a file, if it exists.
 	local path=$1 mode=$2 uid=$3 gid=$4 age=$5 arg=$6
-	if [ -f "$path" ]; then
-		if [ $DRYRUN -eq 1 ]; then
-			echo "echo \"$arg\" >>\"$path\""
+	if [ -f "${path}" ]; then
+		if [ ${DRYRUN} -eq 1 ]; then
+			echo "echo \"${arg}\" >>\"${path}\""
 		else
-			echo "$arg" >>"$path"
+			echo "${arg}" >>"${path}"
 		fi
 	fi
 }
@@ -413,7 +413,7 @@ _z() {
 	# Set ownership, access mode and relabel security context of a file or
 	# directory if it exists. Lines of this type accept shell-style globs in
 	# place of normal path names.
-	[ "$CREATE" -gt 0 ] || return 0
+	[ "${CREATE}" -gt 0 ] || return 0
 
 	relabel "$@"
 }
@@ -422,7 +422,7 @@ _Z() {
 	# Recursively set ownership, access mode and relabel security context of a
 	# path and all its subdirectories (if it is a directory). Lines of this type
 	# accept shell-style globs in place of normal path names.
-	[ "$CREATE" -gt 0 ] || return 0
+	[ "${CREATE}" -gt 0 ] || return 0
 
 	CHOPTS=-R relabel "$@"
 }
@@ -466,7 +466,7 @@ if [ $(( CLEAN )) -eq 1 ] ; then
 	exit 1
 fi
 
-if [ "$CREATE$REMOVE" = '00' ]; then
+if [ "${CREATE}${REMOVE}" = '00' ]; then
 	usage 1 >&2
 fi
 
@@ -481,11 +481,11 @@ if [ -z "${FILES}" ]; then
 	# `/etc/tmpfiles.d/foo.conf' supersedes `/usr/lib/tmpfiles.d/foo.conf'.
 	# `/run/tmpfiles/foo.conf' will always be read after `/etc/tmpfiles.d/bar.conf'
 	for d in ${tmpfiles_dirs} ; do
-		[ -d "$d" ] && for f in "${d}"/*.conf ; do
+		[ -d "${d}" ] && for f in "${d}"/*.conf ; do
 			case "${f##*/}" in
 				systemd.conf|systemd-*.conf) continue;;
 			esac
-			[ -f "$f" ] && tmpfiles_basenames="${tmpfiles_basenames}\n${f##*/}"
+			[ -f "${f}" ] && tmpfiles_basenames="${tmpfiles_basenames}\n${f##*/}"
 		done # for f in ${d}
 	done # for d in ${tmpfiles_dirs}
 	# shellcheck disable=SC2059
@@ -501,9 +501,9 @@ for b in ${FILES} ; do
 		tmpfiles_d="${tmpfiles_d} ${b}"
 	else
 		real_f=''
-		for d in $tmpfiles_dirs ; do
+		for d in ${tmpfiles_dirs} ; do
 			f=${d}/${b}
-			[ -f "${f}" ] && real_f=$f
+			[ -f "${f}" ] && real_f=${f}
 		done
 		[ -f "${real_f}" ] && tmpfiles_d="${tmpfiles_d} ${real_f}"
 	fi
@@ -514,7 +514,7 @@ error=0
 # loop through the gathered fragments, sorted globally by filename.
 # `/run/tmpfiles/foo.conf' will always be read after `/etc/tmpfiles.d/bar.conf'
 FILE=
-for FILE in $tmpfiles_d ; do
+for FILE in ${tmpfiles_d} ; do
 	LINENUM=0
 
 	### FILE FORMAT ###
@@ -532,61 +532,61 @@ for FILE in $tmpfiles_d ; do
 		FORCE=0
 
 		# Unless we have both command and path, skip this line.
-		if [ -z "$cmd" ] || [ -z "$path" ]; then
+		if [ -z "${cmd}" ] || [ -z "${path}" ]; then
 			continue
 		fi
 
-		case $cmd in
+		case ${cmd} in
 			\#*) continue ;;
 		esac
 
 		while [ ${#cmd} -gt 1 ]; do
-			case $cmd in
-				*!) cmd=${cmd%!}; [ "$BOOT" -eq "1" ] || continue 2 ;;
+			case ${cmd} in
+				*!) cmd=${cmd%!}; [ "${BOOT}" -eq "1" ] || continue 2 ;;
 				*+) cmd=${cmd%+}; FORCE=1; ;;
 				*) warninvalid ; continue 2 ;;
 			esac
 		done
 
 		# whine about invalid entries
-		case $cmd in
+		case ${cmd} in
 			f|F|w|d|D|v|p|L|c|C|b|x|X|r|R|z|Z|q|Q|h|H|a|A) ;;
 			*) warninvalid ; continue ;;
 		esac
 
 		# fall back on defaults when parameters are passed as '-'
-		if [ "$mode" = '-' ] || [ "$mode" = '' ]; then
-			case "$cmd" in
+		if [ "${mode}" = '-' ] || [ "${mode}" = '' ]; then
+			case "${cmd}" in
 				p|f|F) mode=0644 ;;
 				d|D|v) mode=0755 ;;
 				C|z|Z|x|r|R|L) ;;
 			esac
 		fi
 
-		[ "$uid" = '-' ] || [ "$uid" = '' ] && uid=0
-		[ "$gid" = '-' ] || [ "$gid" = '' ] && gid=0
-		[ "$age" = '-' ] || [ "$age" = '' ] && age=0
-		[ "$arg" = '-' ] || [ "$arg" = '' ] && arg=''
-		set -- "$path" "$mode" "$uid" "$gid" "$age" "$arg"
+		[ "${uid}" = '-' ] || [ "${uid}" = '' ] && uid=0
+		[ "${gid}" = '-' ] || [ "${gid}" = '' ] && gid=0
+		[ "${age}" = '-' ] || [ "${age}" = '' ] && age=0
+		[ "${arg}" = '-' ] || [ "${arg}" = '' ] && arg=''
+		set -- "${path}" "${mode}" "${uid}" "${gid}" "${age}" "${arg}"
 
-		[ -n "$EXCLUDE" ] && checkprefix "$path" "$EXCLUDE" && continue
-		[ -n "$PREFIX" ] && ! checkprefix "$path" "$PREFIX" && continue
+		[ -n "${EXCLUDE}" ] && checkprefix "${path}" "${EXCLUDE}" && continue
+		[ -n "${PREFIX}" ] && ! checkprefix "${path}" "${PREFIX}" && continue
 
-		if [ "$FORCE" -gt 0 ]; then
-			case $cmd in
-				p|L|c|b) [ -f "$path" ] && dryrun_or_real rm -f "$path"
+		if [ "${FORCE}" -gt 0 ]; then
+			case ${cmd} in
+				p|L|c|b) [ -f "${path}" ] && dryrun_or_real rm -f "${path}"
 			esac
 		fi
 
-		[ "$VERBOSE" -eq "1" ] && echo "_$cmd" "$@"
-		"_$cmd" "$@"
+		[ "${VERBOSE}" -eq "1" ] && echo "_${cmd}" "$@"
+		"_${cmd}" "$@"
 		rc=$?
 		if [ "${DRYRUN}" -eq "0" ]; then
-			[ $rc -ne 0 ] && error=$((error + 1))
+			[ ${rc} -ne 0 ] && error=$((error + 1))
 		fi
-	done <"$FILE"
+	done <"${FILE}"
 done
 
-exit $error
+exit ${error}
 
 # vim: set ts=2 sw=2 sts=2 noet ft=sh:
