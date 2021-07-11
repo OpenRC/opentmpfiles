@@ -1,12 +1,6 @@
 # opentmpfiles
 
+Since systemd-tmpfiles is a single binary which can be compiled and run
+without systemd, we have decided to retire this project.
+For more information see the related [issue](https://github.com/OpenRC/opentmpfiles/issues/19].
 [![Build Status](https://travis-ci.org/OpenRC/opentmpfiles.svg?branch=master)](https://travis-ci.org/OpenRC/opentmpfiles)
-
-This is a standalone utility written to process systemd-style tmpfiles.d
-files so that they can be handled on systems with or without systemd
-installed.
-
-For more information on the files this utility can process, see the
-[tmpfiles.d man page][1].
-
-[1]: https://www.freedesktop.org/software/systemd/man/tmpfiles.d.html
