@@ -19,12 +19,12 @@
 DRYRUN=0
 
 checkprefix() {
-	n=$1
+	local x n="$1"
 	shift
 	for x in "$@"; do
 		case ${n} in
 			${x}*) return 0 ;;
-	esac
+		esac
 	done
 	return 1
 }
