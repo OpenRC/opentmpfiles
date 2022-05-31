@@ -1,0 +1,13 @@
+# Travis build integration.
+# https://docs.travis-ci.com/
+
+language: cpp
+compiler:
+  - gcc
+  - clang
+
+dist: xenial
+os:
+  - linux
+
+script: ./ci/travis.sh
