@@ -29,6 +29,20 @@ checkprefix() {
 	return 1
 }
 
+owned_by_root() {
+	local path="$1"
+	if [ -z "${path}" ] ; then
+		echo "Missing parameter" >&2
+		return 404
+	fi
+	FOUND=$(find "${path}" -maxdepth 0 -uid 0 -gid 0)
+	if [ -z $FOUND ] ; then
+		echo "Not owned by root" >&2
+		return 403
+	fi
+	return 0
+}
+
 warninvalid() {
 	printf "tmpfiles: ignoring invalid entry on line %d of \`%s'\n" "${LINENUM}" "${FILE}"
 	error=$(( error+1 ))
@@ -55,6 +69,10 @@ _chattr() {
 		*) attr="+${attr}" ;;
 	esac
 	local IFS=
+	if ! owned_by_root $1 ; then
+		echo "cowardly refusing to chattr" >&2
+		return 107
+	fi
 	dryrun_or_real chattr "$1" "${attr}" -- "$3"
 }
 
@@ -70,8 +88,16 @@ relabel() {
 	status=0
 	for path in ${paths}; do
 		if [ -e "${path}" ]; then
+			if ! owned_by_root $1 ; then
+				echo "cowardly refusing to relabel" >&2
+				return 108
+			fi
 			if [ -x /sbin/restorecon ]; then
 				dryrun_or_real restorecon ${CHOPTS} "${path}" || status="$?"
+				if [ $status -ne 0 ]; then
+					echo "error on restorecon"  >&2
+					exit $status
+				fi
 			fi
 			if [ "${uid}" != '-' ]; then
 				dryrun_or_real chown ${CHOPTS} "${uid}" "${path}" || status="$?"
@@ -97,14 +123,86 @@ splitpath() {
 
 _restorecon() {
     local path=$1
+	if ! owned_by_root $1 ; then
+		echo "cowardly refusing to restorecon" >&2
+		return 103
+	fi
     if [ -x /sbin/restorecon ]; then
         dryrun_or_real restorecon -F "$(splitpath "${path}")"
     fi
 }
 
+_chmod() {
+    local path=$2 mode=$1
+	if ! owned_by_root "${path}" ; then
+		echo "cowardly refusing to chmod" >&2
+		return 106
+	fi
+	dryrun_or_real chmod ${mode} "${path}"
+	x=$?
+	if [ $x -ne 0 ]; then
+		echo "error on chmod"  >&2
+		exit $x
+	fi
+}
+
+_chown() {
+    local path=$2 uid=$1
+	if ! owned_by_root "${path}" ; then
+		echo "cowardly refusing to chmod" >&2
+		return 107
+	fi
+	dryrun_or_real chown ${uid} "${path}"
+	x=$?
+	if [ $x -ne 0 ]; then
+		echo "error on chown"  >&2
+		exit $x
+	fi
+}
+
+_chgrp() {
+    local path=$2 gid=$1
+	if ! owned_by_root "${path}" ; then
+		echo "cowardly refusing to chgrp" >&2
+		return 108
+	fi
+	dryrun_or_real chgrp ${gid} "${path}"
+	x=$?
+	if [ $x -ne 0 ]; then
+		echo "error on chgrp"  >&2
+		exit $x
+	fi
+}
+
+_rm_f() {
+    	local path=$1 
+	if [ ! -e "${path}" ] ; then
+		echo "file does not exist" >&2
+		return 112
+	fi
+	if owned_by_root "${path}" ; then
+		echo "cowardly refusing to rm" >&2
+		return 113
+	fi
+	rm -f "${path}"
+}
+
 createdirectory() {
-	local mode="$1" uid="$2" gid="$3" path="$4"
-	[ -d "${path}" ] || dryrun_or_real mkdir -p "${path}"
+	local mode="$1" uid="$2" gid="$3" path="$4" x
+	# Do nothing if existing directory
+	# avoids race condition
+	if [ -e "${path}" ] ; then
+		echo "Directory already exists" >&2
+		return 101
+	fi
+	dryrun_or_real mkdir "${path}"
+	# only continue on successful created directory 
+	# avoids rrace condition
+	x=$?
+	if [ $x -ne 0 ] ; then
+		echo "Could not create directory" >&2
+		exit $x
+	fi
 	if [ "${uid}" = - ]; then
 		uid=root
 	fi
@@ -114,14 +212,22 @@ createdirectory() {
 	if [ "${mode}" = - ]; then
 		mode=0755
 	fi
-	dryrun_or_real chown ${uid} "${path}"
-	dryrun_or_real chgrp ${gid} "${path}"
-	dryrun_or_real chmod ${mode} "${path}"
+	dryrun_or_real _chown ${uid} "${path}"
+	dryrun_or_real _chgrp ${gid} "${path}"
+	dryrun_or_real _chmod ${mode} "${path}"
 }
 
 createfile() {
 	local mode="$1" uid="$2" gid="$3" path="$4"
+	if [ -e "${path}" ] ; then
+		echo "File already exists" >&2
+		return 105
+	fi
 	dryrun_or_real touch "${path}"
+	if ! owned_by_root "${path}" ; then
+		echo "cowardly refusing to chown/chgrp/chmod" >&2
+		return 106
+	fi
 	if [ "${uid}" = - ]; then
 		uid=root
 	fi
@@ -131,14 +237,28 @@ createfile() {
 	if [ "${mode}" = - ]; then
 		mode=0644
 	fi
-	dryrun_or_real chown ${uid} "${path}"
-	dryrun_or_real chgrp ${gid} "${path}"
-	dryrun_or_real chmod ${mode} "${path}"
+	dryrun_or_real _chown ${uid} "${path}"
+	dryrun_or_real _chgrp ${gid} "${path}"
+	dryrun_or_real _chmod ${mode} "${path}"
+
 }
 
 createpipe() {
-	local mode="$1" uid="$2" gid="$3" path="$4"
+	local mode="$1" uid="$2" gid="$3" path="$4" x
+	# Do nothing if existing pipe
+	# avoids race condition
+	if [ -e "${path}" ] ; then
+		echo "Pipe already exists" >&2
+		return 104
+	fi
 	dryrun_or_real mkfifo "${path}"
+	# only continue on successful created pipe 
+	# avoids rrace condition
+	x=$?
+	if [ $x -ne 0 ] ; then
+		echo "Could not create pipe" >&2
+		exit $x
+	fi
 	if [ "${uid}" = - ]; then
 		uid=root
 	fi
@@ -148,14 +268,14 @@ createpipe() {
 	if [ "${mode}" = - ]; then
 		mode=0644
 	fi
-	dryrun_or_real chown ${uid} "${path}"
-	dryrun_or_real chgrp ${gid} "${path}"
-	dryrun_or_real chmod ${mode} "${path}"
+	dryrun_or_real _chown ${uid} "${path}"
+	dryrun_or_real _chgrp ${gid} "${path}"
+	dryrun_or_real _chmod ${mode} "${path}"
 }
 
 _b() {
 	# Create a block device node if it doesn't exist yet
-	local path=$1 mode=$2 uid=$3 gid=$4 age=$5 arg=$6
+	local path=$1 mode=$2 uid=$3 gid=$4 age=$5 arg=$6 x
 	if [ "${uid}" = - ]; then
 		uid=root
 	fi
@@ -167,15 +287,20 @@ _b() {
 	fi
 	if [ ! -e "${path}" ]; then
 		dryrun_or_real mknod -m ${mode} "${path}" b "${arg%:*}" "${arg#*:}"
+		x=$?
+		if [ $x -ne 0 ]; then
+			echo "error on mknod"  >&2
+			exit $x
+		fi
 		_restorecon "${path}"
-		dryrun_or_real chown ${uid} "${path}"
-		dryrun_or_real chgrp ${gid} "${path}"
+		dryrun_or_real _chown ${uid} "${path}"
+		dryrun_or_real _chgrp ${gid} "${path}"
 	fi
 }
 
 _c() {
 	# Create a character device node if it doesn't exist yet
-	local path=$1 mode=$2 uid=$3 gid=$4 age=$5 arg=$6
+	local path=$1 mode=$2 uid=$3 gid=$4 age=$5 arg=$6 x
 	if [ "${uid}" = - ]; then
 		uid=root
 	fi
@@ -187,26 +312,44 @@ _c() {
 	fi
 	if [ ! -e "${path}" ]; then
 		dryrun_or_real mknod -m ${mode} "${path}" c "${arg%:*}" "${arg#*:}"
+		x=$?
+		if [ $x -ne 0 ]; then
+			echo "error on mknod"  >&2
+			exit $x
+		fi
 		_restorecon "${path}"
-		dryrun_or_real chown ${uid} "${path}"
-		dryrun_or_real chgrp ${gid} "${path}"
+		dryrun_or_real _chown ${uid} "${path}"
+		dryrun_or_real _chgrp ${gid} "${path}"
 	fi
 }
 
 _C() {
 	# recursively copy a file or directory
 	local path=$1 mode=$2 uid=$3 gid=$4 age=$5 arg=$6
+	if owned_by_root "${arg}" ; then
+		echo "cowardly refusing to copy root-owned dir" >&2
+		return 114
+	fi
 	if [ ! -e "${path}" ]; then
-		dryrun_or_real cp -r "${arg}" "${path}"
+		dryrun_or_real mkdir "$path"
+		# only continue on successful created directory 
+		# avoids race condition
+		x=$?
+		if [ $x -ne 0 ] ; then
+			echo "Could not create directory" >&2
+			exit $x
+		fi
+		# Ignore .hidden files should be OK
+		dryrun_or_real cp -r "${arg}/*" "${path}/"
 		_restorecon "${path}"
 		if [ "${uid}" != '-' ]; then
-			dryrun_or_real chown "${uid}" "${path}"
+			dryrun_or_real _chown "${uid}" "${path}"
 		fi
 		if [ "${gid}" != '-' ]; then
-			dryrun_or_real chgrp "${gid}" "${path}"
+			dryrun_or_real _chgrp "${gid}" "${path}"
 		fi
 		if [ "${mode}" != '-' ]; then
-			dryrun_or_real chmod "${mode}" "${path}"
+			dryrun_or_real _chmod "${mode}" "${path}"
 		fi
 	fi
 }
@@ -227,11 +370,16 @@ _f() {
 
 _F() {
 	# Create or truncate a file
-	local path=$1 mode=$2 uid=$3 gid=$4 age=$5 arg=$6
+	local path=$1 mode=$2 uid=$3 gid=$4 age=$5 arg=$6 x
 
 	[ "${CREATE}" -gt 0 ] || return 0
 
 	dryrun_or_real rm -f "${path}"
+	x=$?
+	if [ $x -ne 0 ]; then
+		echo "error on rm"  >&2
+		exit $x
+	fi
 	createfile "${mode}" "${uid}" "${gid}" "${path}"
 	if [ -n "${arg}" ]; then
 		_w "$@"
@@ -253,7 +401,12 @@ _D() {
 	local path=$1 mode=$2 uid=$3 gid=$4
 
 	if [ -d "${path}" ] && [ "${REMOVE}" -gt 0 ]; then
-		dryrun_or_real find "${path}" -mindepth 1 -maxdepth 1 -xdev -exec rm -rf {} +
+		if owned_by_root "${path}" ; then
+			echo "Cowardly refusing to remove directory" >&2
+			return 102
+		fi
+		dryrun_or_real rm -rf "${path}"
+		createdirectory "${mode}" "${uid}" "${gid}" "${path}"
 		_restorecon "${path}"
 	fi
 
@@ -321,9 +474,14 @@ _H() {
 
 _L() {
 	# Create a symlink if it doesn't exist yet
-	local path=$1 mode=$2 uid=$3 gid=$4 age=$5 arg=$6
+	local path=$1 mode=$2 uid=$3 gid=$4 age=$5 arg=$6 x
 	if [ ! -e "${path}" ]; then
 		dryrun_or_real ln -s "${arg}" "${path}"
+		x=$?
+		if [ $x -ne 0 ]; then
+			echo "error on ln"  >&2
+			exit $x
+		fi
 	fi
 	_restorecon "${path}"
 }
@@ -370,10 +528,18 @@ _r() {
 
 	status=0
 	for path in ${paths}; do
+		if owned_by_root "${path}" ; then
+			echo "cowardly refusing to remove root-owned path" >&2
+			return 113
+		fi
 		if [ -f "${path}" ]; then
 			dryrun_or_real rm -f "${path}" || status="$?"
 		elif [ -d "${path}" ]; then
 			dryrun_or_real rmdir "${path}" || status="$?"
+		fi
+		# Return on first fail
+		if [ $status -ne 0 ]; then
+			exit $status
 		fi
 	done
 	return ${status}
@@ -391,8 +557,16 @@ _R() {
 	status=0
 	for path in ${paths}; do
 		if [ -d "${path}" ]; then
+			if owned_by_root "${path}" ; then
+				echo "cowardly refusing to remove directory" >&2
+				return 109
+			fi
 			dryrun_or_real rm -rf --one-file-system "${path}" || status="$?"
-	fi
+		fi
+		# Return on first fail
+		if [ $status -ne 0 ]; then
+			exit $status
+		fi
 	done
 	return ${status}
 }
@@ -401,6 +575,10 @@ _w() {
 	# Write the argument parameter to a file, if it exists.
 	local path=$1 mode=$2 uid=$3 gid=$4 age=$5 arg=$6
 	if [ -f "${path}" ]; then
+		if owned_by_root "${path}" ; then
+			echo "cowardly refusing to write file" >&2
+			return 110
+		fi
 		if [ ${DRYRUN} -eq 1 ]; then
 			echo "echo \"${arg}\" >>\"${path}\""
 		else
@@ -410,21 +588,13 @@ _w() {
 }
 
 _z() {
-	# Set ownership, access mode and relabel security context of a file or
-	# directory if it exists. Lines of this type accept shell-style globs in
-	# place of normal path names.
-	[ "${CREATE}" -gt 0 ] || return 0
-
-	relabel "$@"
+	echo "Ignoring recursively *"
+	return 111
 }
 
 _Z() {
-	# Recursively set ownership, access mode and relabel security context of a
-	# path and all its subdirectories (if it is a directory). Lines of this type
-	# accept shell-style globs in place of normal path names.
-	[ "${CREATE}" -gt 0 ] || return 0
-
-	CHOPTS=-R relabel "$@"
+	echo "Ignoring recursively *"
+	return 111
 }
 
 usage() {
@@ -574,7 +744,7 @@ for FILE in ${tmpfiles_d} ; do
 
 		if [ "${FORCE}" -gt 0 ]; then
 			case ${cmd} in
-				p|L|c|b) [ -f "${path}" ] && dryrun_or_real rm -f "${path}"
+				p|L|c|b) [ -f "${path}" ] && dryrun_or_real _rm_f "${path}"
 			esac
 		fi
 
