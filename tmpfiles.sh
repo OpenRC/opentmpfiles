@@ -35,8 +35,7 @@ owned_by_root() {
 		echo "Missing parameter" >&2
 		return 404
 	fi
-	FOUND=$(find "${path}" -maxdepth 0 -uid 0 -gid 0)
-	if [ -z $FOUND ] ; then
+	if [ -z "$(find "${path}" -maxdepth 0 -uid 0 -gid 0)" ] ; then
 		echo "Not owned by root" >&2
 		return 403
 	fi
@@ -69,7 +68,7 @@ _chattr() {
 		*) attr="+${attr}" ;;
 	esac
 	local IFS=
-	if ! owned_by_root $1 ; then
+	if ! owned_by_root "$1" ; then
 		echo "cowardly refusing to chattr" >&2
 		return 107
 	fi
@@ -94,7 +93,7 @@ relabel() {
 			fi
 			if [ -x /sbin/restorecon ]; then
 				dryrun_or_real restorecon ${CHOPTS} "${path}" || status="$?"
-				if [ $status -ne 0 ]; then
+				if [ ${status} -ne 0 ]; then
 					echo "error on restorecon"  >&2
 					exit $status
 				fi
@@ -114,26 +113,26 @@ relabel() {
 }
 
 splitpath() {
-    local path=$1
-    while [ -n "${path}" ]; do
-        printf '%s\n' "${path}"
-        path=${path%/*}
-    done
+	local path=$1
+	while [ -n "${path}" ]; do
+	   printf '%s\n' "${path}"
+	   path=${path%/*}
+	done
 }
 
 _restorecon() {
-    local path=$1
+	local path=$1
 	if ! owned_by_root $1 ; then
 		echo "cowardly refusing to restorecon" >&2
 		return 103
 	fi
-    if [ -x /sbin/restorecon ]; then
-        dryrun_or_real restorecon -F "$(splitpath "${path}")"
-    fi
+	if [ -x /sbin/restorecon ]; then
+	   dryrun_or_real restorecon -F "$(splitpath "${path}")"
+	fi
 }
 
 _chmod() {
-    local path=$2 mode=$1
+	local path=$2 mode=$1
 	if ! owned_by_root "${path}" ; then
 		echo "cowardly refusing to chmod" >&2
 		return 106
@@ -147,7 +146,7 @@ _chmod() {
 }
 
 _chown() {
-    local path=$2 uid=$1
+	local path=$2 uid=$1
 	if ! owned_by_root "${path}" ; then
 		echo "cowardly refusing to chmod" >&2
 		return 107
@@ -161,7 +160,7 @@ _chown() {
 }
 
 _chgrp() {
-    local path=$2 gid=$1
+	local path=$2 gid=$1
 	if ! owned_by_root "${path}" ; then
 		echo "cowardly refusing to chgrp" >&2
 		return 108
@@ -175,7 +174,7 @@ _chgrp() {
 }
 
 _rm_f() {
-    	local path=$1 
+	local path=$1 
 	if [ ! -e "${path}" ] ; then
 		echo "file does not exist" >&2
 		return 112
@@ -588,13 +587,21 @@ _w() {
 }
 
 _z() {
-	echo "Ignoring recursively *"
-	return 111
+	# Set ownership, access mode and relabel security context of a file or
+	# directory if it exists. Lines of this type accept shell-style globs in
+	# place of normal path names.
+	[ "${CREATE}" -gt 0 ] || return 0
+
+	relabel "$@"
 }
 
 _Z() {
-	echo "Ignoring recursively *"
-	return 111
+	# Recursively set ownership, access mode and relabel security context of a
+	# path and all its subdirectories (if it is a directory). Lines of this type
+	# accept shell-style globs in place of normal path names.
+	[ "${CREATE}" -gt 0 ] || return 0
+
+	CHOPTS=-R relabel "$@"
 }
 
 usage() {
